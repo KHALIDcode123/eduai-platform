@@ -20,18 +20,18 @@ export default function DashboardHeader({ user, onLogout, title, actions }: Dash
     .toUpperCase()
     .slice(0, 2);
 
-  // State for unread submissions count
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch ungraded submissions for this teacher
   useEffect(() => {
-    if (!user?.uid) return;
+    // Use 'id' instead of 'uid' (matches your User type)
+    if (!user?.id) return;
 
     const fetchUnread = async () => {
       try {
         const q = query(
           collection(db, "submissions"),
-          where("teacherId", "==", user.uid),
+          where("teacherId", "==", user.id),   // <-- changed from user.uid
           where("status", "==", "submitted")
         );
         const snapshot = await getDocs(q);
@@ -59,7 +59,6 @@ export default function DashboardHeader({ user, onLogout, title, actions }: Dash
         <div className="flex items-center gap-3">
           {actions}
           
-          {/* Notification Bell with badge */}
           <button
             onClick={() => toast.success(`You have ${unreadCount} unread submission${unreadCount !== 1 ? 's' : ''} to review`)}
             className="p-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-white relative transition-colors"
