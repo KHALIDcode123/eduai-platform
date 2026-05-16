@@ -1,4 +1,8 @@
 import { Sparkles, Bell, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import toast from "react-hot-toast";
 import type { User } from "@/types";
 
 interface DashboardHeaderProps {
@@ -16,6 +20,30 @@ export default function DashboardHeader({ user, onLogout, title, actions }: Dash
     .toUpperCase()
     .slice(0, 2);
 
+  // State for unread submissions count
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch ungraded submissions for this teacher
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const fetchUnread = async () => {
+      try {
+        const q = query(
+          collection(db, "submissions"),
+          where("teacherId", "==", user.uid),
+          where("status", "==", "submitted")
+        );
+        const snapshot = await getDocs(q);
+        setUnreadCount(snapshot.size);
+      } catch (error) {
+        console.error("Failed to fetch unread submissions:", error);
+      }
+    };
+
+    fetchUnread();
+  }, [user]);
+
   return (
     <header className="glass-overlay border-b border-dark-700/50 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -30,13 +58,21 @@ export default function DashboardHeader({ user, onLogout, title, actions }: Dash
 
         <div className="flex items-center gap-3">
           {actions}
+          
+          {/* Notification Bell with badge */}
           <button
+            onClick={() => toast.success(`You have ${unreadCount} unread submission${unreadCount !== 1 ? 's' : ''} to review`)}
             className="p-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-white relative transition-colors"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
+
           <div className="w-9 h-9 bg-primary-500/20 border border-primary-500/30 rounded-full flex items-center justify-center text-primary-300 text-sm font-bold">
             {initials}
           </div>
